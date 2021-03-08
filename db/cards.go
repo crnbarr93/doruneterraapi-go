@@ -12,21 +12,24 @@ import (
 
 var (
 	collection *mongo.Collection
+	cards      []types.Card
 )
 
-func assignCollection() {
-	if database == nil {
-		return
-	}
+func init() {
+	go setup()
+}
 
+func setup() {
+	<-GetIsConnected()
+	assignCollection()
+	cacheCards()
+}
+
+func assignCollection() {
 	collection = database.Collection("cards")
 }
 
-func GetAllCards() []types.Card {
-	if collection == nil {
-		assignCollection()
-	}
-
+func cacheCards() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var data []types.Card
@@ -41,5 +44,9 @@ func GetAllCards() []types.Card {
 		log.Fatal(err)
 	}
 
-	return data
+	cards = data
+}
+
+func GetAllCards() []types.Card {
+	return cards
 }

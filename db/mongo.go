@@ -15,8 +15,21 @@ import (
 var (
 	client    *mongo.Client
 	database  *mongo.Database
-	connected bool
+	connected chan bool
 )
+
+func init() {
+	connected = make(chan bool, 1)
+	connect()
+	Ping()
+
+	database = client.Database(config.Config.Database.Database)
+	if database == nil {
+		log.Fatal("No database found")
+	}
+
+	connected <- true
+}
 
 func connect() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -26,19 +39,12 @@ func connect() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
 
-func init() {
-	connect()
-	Ping()
+	select {
+	case <-ctx.Done():
+		log.Println(color.GreenString(("Connected to MongoDB!")))
 
-	database = client.Database(config.Config.Database.Database)
-	if database == nil {
-		log.Fatal("No database found")
 	}
-
-	log.Println(color.GreenString("Connected to MongoDB!"))
-	connected = true
 }
 
 func GetClient() *mongo.Client {
@@ -49,7 +55,7 @@ func GetDatabase() *mongo.Database {
 	return database
 }
 
-func GetIsConnected() bool {
+func GetIsConnected() chan bool {
 	return connected
 }
 
