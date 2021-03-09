@@ -15,7 +15,7 @@ type Card struct {
 	FlavorText            string   `json:"flavorText" bson:"flavorText"`
 	ArtistName            string   `json:"artistName" bson:"artistName"`
 	Name                  string   `json:"name" bson:"name"`
-	CardCode              string   `json:"cardCode" bson:"cardCode"`
+	CardCode              string   `json:"cardCode,omitempty" bson:"cardCode,omitempty"`
 	Keywords              []string `json:"keywords" bson:"keywords"`
 	KeywordRefs           []string `json:"keywordRefs" bson:"keywordRefs"`
 	SpellSpeed            string   `json:"spellSpeed" bson:"spellSpeed"`

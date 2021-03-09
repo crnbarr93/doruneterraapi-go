@@ -1,7 +1,6 @@
 database:
   address: "mongodb://localhost:27017"
   database: runeterra
-  debug: true
-  port: 27017
+  testing: false
 api:
   token: "doruneterra-go"
