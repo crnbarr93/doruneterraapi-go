@@ -30,17 +30,54 @@ func TestCacheCards(t *testing.T) {
 	err := model.cacheCards()
 
 	assert.Nil(t, err)
-	assert.NotEmpty(t, model.cards)
+	assert.NotEmpty(t, model.Cards)
 }
 
 func TestGetAll(t *testing.T) {
 	cards := make([]types.Card, 1)
 	cards[0] = types.Card{ID: "test"}
 
-	model := CardModel{cards: cards}
+	model := CardModel{Cards: cards}
 
 	expected := cards[0].ID
 	received := model.GetAll()[0].ID
 
 	assert.Equal(t, expected, received)
+}
+
+func TestGetCard(t *testing.T) {
+	cards := make([]types.Card, 1)
+	cards[0] = types.Card{ID: "test", CardCode: "test"}
+
+	model := CardModel{Cards: cards}
+
+	expected := cards[0].CardCode
+	received := model.GetCard(cards[0].CardCode).CardCode
+
+	assert.Equal(t, expected, received)
+
+	nilCard := model.GetCard("doesntexist")
+
+	assert.Nil(t, nilCard)
+}
+
+func TestUpdateCards(t *testing.T) {
+	cardUpdates := make([]types.Card, 1)
+	cardUpdates[0] = types.Card{
+		ID:                 "01IO012",
+		AssociatedCardRefs: make([]string, 0),
+		Region:             "Noxus",
+		RegionRef:          "Noxus",
+	}
+
+	database := db.New(config.TestConfig.Database)
+	database.Connect()
+	database.WaitForConnection()
+
+	model := New(database.Collection("cards"))
+	model.UpdateCards(cardUpdates)
+
+	updatedCard := model.GetCardFromDB(cardUpdates[0].CardCode)
+
+	assert.Equal(t, cardUpdates[0].Region, updatedCard.Region)
 }

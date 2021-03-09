@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/models"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 )
 
@@ -15,6 +16,7 @@ const (
 	maxKnownSet int    = 4
 )
 
+//Data Dragon Card - Structure received from Endpoint
 type DDCard struct {
 	AssociatedCardRefs    []string `json:"associatedCardRefs" bson:"associatedCardRefs"`
 	Region                string   `json:"region" bson:"region"`
@@ -40,7 +42,7 @@ type DDCard struct {
 	Supertype             string   `json:"supertype" bson:"supertype"`
 	Type                  string   `json:"type" bson:"type"`
 	Collectible           bool     `json:"collectible" bson:"collectible"`
-	Set                   string   `json:"card_set" bson:"card_set"`
+	Set                   string   `json:"set" bson:"set"`
 }
 
 func (c DDCard) getSetInteger() (int, error) {
@@ -48,6 +50,7 @@ func (c DDCard) getSetInteger() (int, error) {
 	return strconv.Atoi(setString)
 }
 
+//Map to Card Type
 func (c *DDCard) toCard() types.Card {
 	cardSet, err := c.getSetInteger()
 	if err != nil {
@@ -91,7 +94,7 @@ func getSetURL(set int) string {
 }
 
 func getSetData(set int) []types.Card {
-	setURL := getSetURL(4)
+	setURL := getSetURL(set)
 
 	resp, err := http.Get(setURL)
 	if err != nil {
@@ -108,17 +111,34 @@ func getSetData(set int) []types.Card {
 	}
 
 	var ddCards []DDCard
-
 	err = json.Unmarshal(body, &ddCards)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	//SEPARATE TO NEW FUNC
 	cards := make([]types.Card, len(ddCards))
 	for i, card := range ddCards {
 		cards[i] = card.toCard()
 	}
 
 	return cards
+}
+
+func hasCardChanged(model models.CardModel, card types.Card) bool {
+	savedCard := model.GetCard(card.CardCode)
+
+	return savedCard == nil || !savedCard.Compare(card)
+}
+
+func updateSetData(model models.CardModel, cards []types.Card) []types.Card {
+	var updatedCards []types.Card
+
+	for _, card := range cards {
+		hasUpdated := hasCardChanged(model, card)
+		if hasUpdated {
+			updatedCards = append(updatedCards, card)
+		}
+	}
+
+	return updatedCards
 }

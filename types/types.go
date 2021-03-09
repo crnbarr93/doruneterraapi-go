@@ -1,5 +1,7 @@
 package types
 
+import "github.com/google/go-cmp/cmp"
+
 type Card struct {
 	ID                    string   `json:"_id,omitempty" bson:"_id,omitempty"`
 	AssociatedCardRefs    []string `json:"associatedCardRefs" bson:"associatedCardRefs"`
@@ -28,4 +30,8 @@ type Card struct {
 	Collectible           bool     `json:"collectible" bson:"collectible"`
 	CardSet               int      `json:"card_set" bson:"card_set"`
 	CardSubset            int      `json:"card_subset,omitempty" bson:"card_subset,omitempty"`
+}
+
+func (c Card) Compare(b Card) bool {
+	return cmp.Equal(c, b)
 }

@@ -2,22 +2,24 @@ package models
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type CardModel struct {
 	collection *mongo.Collection
-	cards      []types.Card
+	Cards      []types.Card
 }
 
 func New(collection *mongo.Collection) *CardModel {
 	return &CardModel{
 		collection: collection,
-		cards:      make([]types.Card, 0),
+		Cards:      make([]types.Card, 0),
 	}
 }
 
@@ -38,11 +40,56 @@ func (m *CardModel) cacheCards() error {
 		return err
 	}
 
-	m.cards = data
+	m.Cards = data
 
 	return nil
 }
 
 func (m *CardModel) GetAll() []types.Card {
-	return m.cards
+	return m.Cards
+}
+
+func (m *CardModel) GetCard(cardCode string) *types.Card {
+	cards := m.GetAll()
+	for _, card := range cards {
+		if card.CardCode == cardCode {
+			return &card
+		}
+	}
+
+	return nil
+}
+
+func (m *CardModel) GetCardFromDB(cardCode string) types.Card {
+	var card types.Card
+	result := m.collection.FindOne(context.Background(), bson.M{"_id": cardCode})
+	result.Decode(&card)
+
+	return card
+}
+
+func (m *CardModel) UpdateCards(cards []types.Card) {
+	var operations []mongo.WriteModel
+	for _, card := range cards {
+		filter := bson.M{"_id": card.ID}
+		update := bson.M{"$set": card}
+
+		operation := mongo.NewUpdateOneModel()
+		operation.SetFilter(filter)
+		operation.SetUpdate(update)
+		operation.SetUpsert(true)
+		operations = append(operations, operation)
+	}
+
+	bulkOption := options.BulkWriteOptions{}
+	bulkOption.SetOrdered(true)
+
+	bulkContext := context.Background()
+	result, err := m.collection.BulkWrite(bulkContext, operations, &bulkOption)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Updated %v documents", result.ModifiedCount)
+	log.Printf("Upserted %v documents", result.UpsertedCount)
+	go m.cacheCards()
 }
