@@ -77,7 +77,8 @@ func TestUpdateCards(t *testing.T) {
 	model := New(database.Collection("cards"))
 	model.UpdateCards(cardUpdates)
 
-	updatedCard := model.GetCardFromDB(cardUpdates[0].CardCode)
+	updatedCard, err := model.GetCardFromDB(cardUpdates[0].ID)
 
+	assert.Nil(t, err)
 	assert.Equal(t, cardUpdates[0].Region, updatedCard.Region)
 }

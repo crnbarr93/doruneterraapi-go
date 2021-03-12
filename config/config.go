@@ -49,7 +49,7 @@ func init() {
 	testConfig.AddConfigPath(".")
 	testConfig.AddConfigPath("config/")
 	testConfig.AddConfigPath("../config/")
-	testConfig.AddConfigPath("../")
+	// testConfig.AddConfigPath("../")
 	testConfig.SetEnvKeyReplacer(strings.NewReplacer(".", "__"))
 	testConfig.AutomaticEnv()
 
@@ -57,7 +57,7 @@ func init() {
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s ", err))
 	}
-	err = config.Unmarshal(&TestConfig)
+	err = testConfig.Unmarshal(&TestConfig)
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %s ", err))
 	}

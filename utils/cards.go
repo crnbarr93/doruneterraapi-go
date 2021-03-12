@@ -1,12 +1,14 @@
 package utils
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 
+	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/db"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/models"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 )
@@ -95,7 +97,7 @@ func getSetURL(set int) string {
 
 func getSetData(set int) []types.Card {
 	setURL := getSetURL(set)
-
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	resp, err := http.Get(setURL)
 	if err != nil {
 		log.Fatalln(err)
@@ -124,13 +126,13 @@ func getSetData(set int) []types.Card {
 	return cards
 }
 
-func hasCardChanged(model models.CardModel, card types.Card) bool {
+func hasCardChanged(model *models.CardModel, card types.Card) bool {
 	savedCard := model.GetCard(card.CardCode)
 
 	return savedCard == nil || !savedCard.Compare(card)
 }
 
-func updateSetData(model models.CardModel, cards []types.Card) []types.Card {
+func updateSetData(model *models.CardModel, cards []types.Card) []types.Card {
 	var updatedCards []types.Card
 
 	for _, card := range cards {
@@ -141,4 +143,24 @@ func updateSetData(model models.CardModel, cards []types.Card) []types.Card {
 	}
 
 	return updatedCards
+}
+
+func updateSet(model *models.CardModel, set int) {
+	setData := getSetData(set)
+	setUpdates := updateSetData(model, setData)
+	if len(setUpdates) > 0 {
+		model.UpdateCards(setUpdates)
+	}
+	log.Printf("Updated %v cards for Set %v", len(setUpdates), set)
+}
+
+func UpdateAllSets(db *db.Database) {
+	db.WaitForConnection()
+
+	collection := db.Collection("cards")
+	model := models.New(collection)
+	for i := 1; i <= maxKnownSet; i++ {
+		go updateSet(model, i)
+	}
+
 }

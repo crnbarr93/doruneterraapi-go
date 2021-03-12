@@ -60,36 +60,36 @@ func (m *CardModel) GetCard(cardCode string) *types.Card {
 	return nil
 }
 
-func (m *CardModel) GetCardFromDB(cardCode string) types.Card {
+func (m *CardModel) GetCardFromDB(cardCode string) (*types.Card, error) {
 	var card types.Card
-	result := m.collection.FindOne(context.Background(), bson.M{"_id": cardCode})
-	result.Decode(&card)
-
-	return card
+	result := m.collection.FindOne(context.Background(), bson.D{{"_id", cardCode}})
+	err := result.Decode(&card)
+	if err != nil {
+		return nil, err
+	}
+	return &card, nil
 }
 
 func (m *CardModel) UpdateCards(cards []types.Card) {
 	var operations []mongo.WriteModel
+
 	for _, card := range cards {
-		filter := bson.M{"_id": card.ID}
-		update := bson.M{"$set": card}
+		// filter := bson.M{"_id": card.ID}
+		// update := bson.M{"$set": card}
 
 		operation := mongo.NewUpdateOneModel()
-		operation.SetFilter(filter)
-		operation.SetUpdate(update)
+		operation.SetFilter(bson.M{"_id": card.ID})
+		operation.SetUpdate(bson.M{"$set": card})
 		operation.SetUpsert(true)
 		operations = append(operations, operation)
 	}
 
 	bulkOption := options.BulkWriteOptions{}
 	bulkOption.SetOrdered(true)
-
 	bulkContext := context.Background()
-	result, err := m.collection.BulkWrite(bulkContext, operations, &bulkOption)
+	_, err := m.collection.BulkWrite(bulkContext, operations, &bulkOption)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Updated %v documents", result.ModifiedCount)
-	log.Printf("Upserted %v documents", result.UpsertedCount)
 	go m.cacheCards()
 }
