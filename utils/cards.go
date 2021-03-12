@@ -128,11 +128,10 @@ func getSetData(set int) []types.Card {
 
 func hasCardChanged(model *models.CardModel, card types.Card) bool {
 	savedCard := model.GetCard(card.CardCode)
-
 	return savedCard == nil || !savedCard.Compare(card)
 }
 
-func updateSetData(model *models.CardModel, cards []types.Card) []types.Card {
+func getCardsToUpdate(model *models.CardModel, cards []types.Card) []types.Card {
 	var updatedCards []types.Card
 
 	for _, card := range cards {
@@ -147,7 +146,7 @@ func updateSetData(model *models.CardModel, cards []types.Card) []types.Card {
 
 func updateSet(model *models.CardModel, set int) {
 	setData := getSetData(set)
-	setUpdates := updateSetData(model, setData)
+	setUpdates := getCardsToUpdate(model, setData)
 	if len(setUpdates) > 0 {
 		model.UpdateCards(setUpdates)
 	}
@@ -156,9 +155,12 @@ func updateSet(model *models.CardModel, set int) {
 
 func UpdateAllSets(db *db.Database) {
 	db.WaitForConnection()
-
 	collection := db.Collection("cards")
 	model := models.New(collection)
+	if len(model.Cards) == 0 {
+		model.CacheCards()
+	}
+
 	for i := 1; i <= maxKnownSet; i++ {
 		go updateSet(model, i)
 	}

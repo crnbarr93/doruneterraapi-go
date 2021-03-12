@@ -27,7 +27,7 @@ func TestCacheCards(t *testing.T) {
 	collection := database.Collection("cards")
 	model := New(collection)
 
-	err := model.cacheCards()
+	err := model.CacheCards()()
 
 	assert.Nil(t, err)
 	assert.NotEmpty(t, model.Cards)

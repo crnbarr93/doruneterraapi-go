@@ -40,13 +40,13 @@ func TestHasCardChanged(t *testing.T) {
 
 	model := models.CardModel{Cards: cards}
 
-	shouldNotHaveChanged := hasCardChanged(model, cards[0])
+	shouldNotHaveChanged := hasCardChanged(&model, cards[0])
 
 	assert.False(t, shouldNotHaveChanged)
 
 	changedCard := types.Card{ID: "test2", CardCode: "test"}
 
-	shouldHaveChanged := hasCardChanged(model, changedCard)
+	shouldHaveChanged := hasCardChanged(&model, changedCard)
 	assert.True(t, shouldHaveChanged)
 }
 
@@ -58,7 +58,7 @@ func TestUpdateSetData(t *testing.T) {
 
 	model := models.CardModel{Cards: savedCards}
 
-	updatedCards := updateSetData(model, cardUpdates)
+	updatedCards := getCardsToUpdate(&model, cardUpdates)
 
 	assert.Equal(t, cardUpdates[0], updatedCards[0])
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/labstack/echo"
+	"github.com/robfig/cron"
 
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/app"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/config"
@@ -11,7 +12,11 @@ import (
 
 func main() {
 	database := db.New(config.Config.Database)
-	go utils.UpdateAllSets(database)
+
+	c := cron.New()
+	c.AddFunc("0 */48 * * *", func() { go utils.UpdateAllSets(database) })
+	c.Start()
+
 	e := echo.New()
 
 	app := app.New(e, database)

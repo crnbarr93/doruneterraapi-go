@@ -23,7 +23,7 @@ func New(collection *mongo.Collection) *CardModel {
 	}
 }
 
-func (m *CardModel) cacheCards() error {
+func (m *CardModel) CacheCards() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -91,5 +91,5 @@ func (m *CardModel) UpdateCards(cards []types.Card) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	go m.cacheCards()
+	go m.CacheCards()
 }
