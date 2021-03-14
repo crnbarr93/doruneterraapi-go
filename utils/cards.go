@@ -156,7 +156,7 @@ func updateSet(model *models.CardModel, set int) {
 func UpdateAllSets(db *db.Database) {
 	db.WaitForConnection()
 	collection := db.Collection("cards")
-	model := models.New(collection)
+	model := models.NewCardModel(collection)
 	if len(model.Cards) == 0 {
 		model.CacheCards()
 	}

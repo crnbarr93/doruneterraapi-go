@@ -16,7 +16,7 @@ type CardModel struct {
 	Cards      []types.Card
 }
 
-func New(collection *mongo.Collection) *CardModel {
+func NewCardModel(collection *mongo.Collection) *CardModel {
 	return &CardModel{
 		collection: collection,
 		Cards:      make([]types.Card, 0),
@@ -74,12 +74,12 @@ func (m *CardModel) UpdateCards(cards []types.Card) {
 	var operations []mongo.WriteModel
 
 	for _, card := range cards {
-		// filter := bson.M{"_id": card.ID}
-		// update := bson.M{"$set": card}
+		filter := bson.M{"_id": card.ID}
+		update := bson.M{"$set": card}
 
 		operation := mongo.NewUpdateOneModel()
-		operation.SetFilter(bson.M{"_id": card.ID})
-		operation.SetUpdate(bson.M{"$set": card})
+		operation.SetFilter(filter)
+		operation.SetUpdate(update)
 		operation.SetUpsert(true)
 		operations = append(operations, operation)
 	}

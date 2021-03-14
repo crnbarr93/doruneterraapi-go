@@ -9,9 +9,7 @@ import (
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 )
 
-var m CardModel
-
-func initializeDatabase() *db.Database {
+func InitializeDatabase() *db.Database {
 	database := db.New(config.TestConfig.Database)
 	err := database.Connect()
 	if err != nil {
@@ -23,11 +21,11 @@ func initializeDatabase() *db.Database {
 }
 
 func TestCacheCards(t *testing.T) {
-	database := initializeDatabase()
+	database := InitializeDatabase()
 	collection := database.Collection("cards")
-	model := New(collection)
+	model := NewCardModel(collection)
 
-	err := model.CacheCards()()
+	err := model.CacheCards()
 
 	assert.Nil(t, err)
 	assert.NotEmpty(t, model.Cards)
@@ -70,11 +68,9 @@ func TestUpdateCards(t *testing.T) {
 		RegionRef:          "Noxus",
 	}
 
-	database := db.New(config.TestConfig.Database)
-	database.Connect()
-	database.WaitForConnection()
+	database := InitializeDatabase()
 
-	model := New(database.Collection("cards"))
+	model := NewCardModel(database.Collection("cards"))
 	model.UpdateCards(cardUpdates)
 
 	updatedCard, err := model.GetCardFromDB(cardUpdates[0].ID)

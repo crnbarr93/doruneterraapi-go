@@ -1,6 +1,10 @@
 package types
 
-import "github.com/google/go-cmp/cmp"
+import (
+	"time"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 type Card struct {
 	ID                    string   `json:"_id,omitempty" bson:"_id,omitempty"`
@@ -34,4 +38,35 @@ type Card struct {
 
 func (c Card) Compare(b Card) bool {
 	return cmp.Equal(c, b)
+}
+
+type CardQuantity struct {
+	CardID   string `json:"cardId" bson:"cardId"`
+	Quantity int    `json:"quantity" bson:"quantity"`
+}
+
+type DeckBadge struct {
+	Color string `json:"color" bson:"color"`
+	Text  string `json:"text" bson:"text"`
+}
+
+type Deck struct {
+	ID             string         `json:"_id,omitempty" bson:"_id,omitempty"`
+	Cards          []CardQuantity `json:"cards" bson:"cards"`
+	DeckCode       string         `json:"deckCode" bson:"deckCode"`
+	Title          string         `json:"title" bson:"title"`
+	OwnerUsername  string         `json:"ownerUsername" bson:"ownerUsername"`
+	Owner          string         `json:"owner" bson:"owner"`
+	DateCreated    time.Time      `json:"dateCreated" bson:"dateCreated"`
+	DateUpdated    time.Time      `json:"dateUpdated" bson:"dateUpdated"`
+	DatePublished  time.Time      `json:"datePublished,omitempty" bson:"datePublished,omitempty"`
+	DateDeleted    time.Time      `json:"dateDeleted,omitempty" bson:"dateDeleted,omitempty"`
+	PageViews      int            `json:"pageviews" bson:"pageviews"`
+	Guide          string         `json:"guide" bson:"guide"`
+	Published      bool           `json:"published" bson:"published"`
+	Deleted        bool           `json:"deleted" bson:"deleted"`
+	Regions        []string       `json:"regions" bson:"regions"`
+	FeaturedPlayer string         `json:"featuredPlayer,omitempty" bson:"featuredPlayer,omitempty"`
+	Badge          DeckBadge      `json:"deckBadge,omitempty" bson:"deckBadge,omitempty"`
+	Sandbox        bool           `json:"sandbox" bson:"sandbox"`
 }
