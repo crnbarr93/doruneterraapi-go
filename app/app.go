@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/db"
+	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/handler"
 )
 
 type App struct {
@@ -20,7 +21,6 @@ func New(router *echo.Echo, db *db.Database) *App {
 
 func (a *App) Run(port string) error {
 	err := a.DB.Connect()
-
 	if err != nil {
 		return err
 	}
@@ -31,6 +31,9 @@ func (a *App) Run(port string) error {
 	a.Router.Pre(middleware.RemoveTrailingSlash())
 
 	//Routes
+	a.Router.GET("/",handler.Hello)
+		
+
 	// cardRoutes := a.Router.Group("/cards")
 	// cardRoutes.GET("/all", handler.GetCards)
 

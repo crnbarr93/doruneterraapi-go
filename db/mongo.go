@@ -30,10 +30,10 @@ func (d *Database) Connect() error {
 	}
 	d.Client = mgoClient
 
-	connErr := d.checkDatabaseConnection()
-	if connErr != nil {
-		return connErr
-	}
+	// connErr := d.checkDatabaseConnection()
+	// if connErr != nil {
+	// 	return connErr
+	// }
 
 	database := mgoClient.Database(d.config.Database)
 	if database == nil {
@@ -48,7 +48,7 @@ func (d *Database) Connect() error {
 }
 
 func (d Database) checkDatabaseConnection() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	err := d.Client.Ping(ctx, readpref.Primary())
 
