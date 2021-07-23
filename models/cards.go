@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/db"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -14,6 +15,13 @@ import (
 type CardModel struct {
 	collection *mongo.Collection
 	Cards      []types.Card
+}
+
+func InitCardModel(d *db.Database) *CardModel {
+	collection := d.Collection("cards")
+	m := NewCardModel(collection)
+	m.CacheCards()
+	return m
 }
 
 func NewCardModel(collection *mongo.Collection) *CardModel {
@@ -62,7 +70,7 @@ func (m *CardModel) GetCard(cardCode string) *types.Card {
 
 func (m *CardModel) GetCardFromDB(cardCode string) (*types.Card, error) {
 	var card types.Card
-	result := m.collection.FindOne(context.Background(), bson.D{{"_id", cardCode}})
+	result := m.collection.FindOne(context.Background(), bson.D{{Key: "_id", Value: cardCode}})
 	err := result.Decode(&card)
 	if err != nil {
 		return nil, err

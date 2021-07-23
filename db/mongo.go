@@ -16,6 +16,7 @@ func New(config config.DatabaseConfig) *Database {
 	return &Database{
 		config:           config,
 		connectionStatus: Disconnected,
+		testing:          config.Testing,
 	}
 }
 
@@ -82,6 +83,7 @@ func (d Database) CreateSession() (mongo.Session, error) {
 }
 
 func (d Database) DropCollection(collection string) error {
+	println(d.config.Address, d.config.Database)
 	if !d.testing {
 		return errors.New("Cannot drop collections in a non-test environment")
 	}

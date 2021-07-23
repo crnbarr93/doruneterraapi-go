@@ -10,7 +10,7 @@ import (
 type DatabaseConfig struct {
 	Address  string `mapstructure:"address"`
 	Database string `mapstructure:"database"`
-	testing  string `mapstructure:"testing"`
+	Testing  bool   `mapstructure:"testing"`
 }
 
 type Schema struct {

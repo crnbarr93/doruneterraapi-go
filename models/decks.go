@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 
+	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/db"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -11,6 +12,12 @@ import (
 
 type DeckModel struct {
 	collection *mongo.Collection
+}
+
+func InitDeckModel(d *db.Database) *DeckModel {
+	collection := d.Collection("decks")
+	m := NewDeckModel(collection)
+	return m
 }
 
 func NewDeckModel(collection *mongo.Collection) *DeckModel {

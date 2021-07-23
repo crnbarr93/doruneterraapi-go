@@ -70,3 +70,13 @@ type Deck struct {
 	Badge          DeckBadge      `json:"deckBadge,omitempty" bson:"deckBadge,omitempty"`
 	Sandbox        bool           `json:"sandbox" bson:"sandbox"`
 }
+
+type User struct {
+	ID          string    `json:"_id,omitempty" bson:"_id,omitempty"`
+	Access      int       `json:"access" bson:"access"`
+	Username    string    `json:"username" bson:"username"`
+	Email       string    `json:"email" bson:"email"`
+	Password    string    `json:"password" bson:"password"`
+	DateCreated time.Time `json:"date_created" bson:"date_created"`
+	DateUpdated time.Time `json:"date_updated,omitempty" bson:"date_updated,omitempty"`
+}
