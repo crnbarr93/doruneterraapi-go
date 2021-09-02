@@ -18,11 +18,9 @@ func (c Card) GetFaction() Faction {
 
 func FactionNumberFromName(reg string) int {
 	factions := []Faction{DEMACIA, FRELJORD, IONIA, NOXUS, PILTOVERZAUN, SHADOWISLES, BILGEWATER, SHURIMA, MOUNTTARGON, BANDLECITY}
-	factionNames := []string{"Demacia", "Freljord", "Ionia", "Noxus", "Piltover & Zaun", "Shadow Isles", "Bilgewater", "Shurima", "Mount Targon", "Bandle City"}
-	for i, name := range factionNames {
-		if name == reg {
-			return i
-		}
+	factionNames := map[string]int{"Demacia": 0, "Freljord": 1, "Ionia": 2, "Noxus": 3, "Piltover & Zaun": 4, "Shadow Isles": 5, "Bilgewater": 6, "Shurima": 7, "Mount Targon": 9, "Bandle City": 10}
+	if val, ok := factionNames[reg]; ok {
+		return val
 	}
 
 	return len(factions) + 1
