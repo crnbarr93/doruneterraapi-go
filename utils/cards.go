@@ -10,18 +10,18 @@ import (
 
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/db"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/models"
-	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 )
 
 const (
 	baseURL     string = "https://dd.b.pvp.net/latest/"
-	maxKnownSet int    = 4
+	maxKnownSet int    = 5
 )
 
 //Data Dragon Card - Structure received from Endpoint
 type DDCard struct {
 	AssociatedCardRefs    []string `json:"associatedCardRefs" bson:"associatedCardRefs"`
 	Region                string   `json:"region" bson:"region"`
+	Regions               []string `json:"regions" bson:"regions"`
 	RegionRef             string   `json:"regionRef" bson:"regionRef"`
 	Attack                int      `json:"attack" bson:"attack"`
 	Cost                  int      `json:"cost" bson:"cost"`
@@ -53,13 +53,13 @@ func (c DDCard) getSetInteger() (int, error) {
 }
 
 //Map to Card Type
-func (c *DDCard) toCard() types.Card {
+func (c *DDCard) toCard() models.Card {
 	cardSet, err := c.getSetInteger()
 	if err != nil {
 		log.Fatalln("Could not convert set string to integer")
 	}
 
-	return types.Card{
+	return models.Card{
 		ID:                    c.CardCode,
 		AssociatedCardRefs:    c.AssociatedCardRefs,
 		Region:                c.Region,
@@ -95,7 +95,7 @@ func getSetURL(set int) string {
 	return baseURL + "set" + setString + "/en_us/data/set" + setString + "-en_us.json"
 }
 
-func getSetData(set int) []types.Card {
+func getSetData(set int) []models.Card {
 	setURL := getSetURL(set)
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	resp, err := http.Get(setURL)
@@ -118,7 +118,7 @@ func getSetData(set int) []types.Card {
 		log.Fatalln(err)
 	}
 
-	cards := make([]types.Card, len(ddCards))
+	cards := make([]models.Card, len(ddCards))
 	for i, card := range ddCards {
 		cards[i] = card.toCard()
 	}
@@ -126,13 +126,13 @@ func getSetData(set int) []types.Card {
 	return cards
 }
 
-func hasCardChanged(model *models.CardModel, card types.Card) bool {
+func hasCardChanged(model *models.CardModel, card models.Card) bool {
 	savedCard := model.GetCard(card.CardCode)
 	return savedCard == nil || !savedCard.Compare(card)
 }
 
-func getCardsToUpdate(model *models.CardModel, cards []types.Card) []types.Card {
-	var updatedCards []types.Card
+func getCardsToUpdate(model *models.CardModel, cards []models.Card) []models.Card {
+	var updatedCards []models.Card
 
 	for _, card := range cards {
 		hasUpdated := hasCardChanged(model, card)

@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/models"
-	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 )
 
 func TestGetSetURL(t *testing.T) {
@@ -35,8 +34,8 @@ func TestGetSetData(t *testing.T) {
 }
 
 func TestHasCardChanged(t *testing.T) {
-	cards := make([]types.Card, 1)
-	cards[0] = types.Card{ID: "test", CardCode: "test"}
+	cards := make([]models.Card, 1)
+	cards[0] = models.Card{ID: "test", CardCode: "test"}
 
 	model := models.CardModel{Cards: cards}
 
@@ -44,17 +43,17 @@ func TestHasCardChanged(t *testing.T) {
 
 	assert.False(t, shouldNotHaveChanged)
 
-	changedCard := types.Card{ID: "test2", CardCode: "test"}
+	changedCard := models.Card{ID: "test2", CardCode: "test"}
 
 	shouldHaveChanged := hasCardChanged(&model, changedCard)
 	assert.True(t, shouldHaveChanged)
 }
 
 func TestUpdateSetData(t *testing.T) {
-	savedCards := make([]types.Card, 1)
-	cardUpdates := make([]types.Card, 1)
-	savedCards[0] = types.Card{ID: "test", CardCode: "test"}
-	cardUpdates[0] = types.Card{ID: "test2", CardCode: "test"}
+	savedCards := make([]models.Card, 1)
+	cardUpdates := make([]models.Card, 1)
+	savedCards[0] = models.Card{ID: "test", CardCode: "test"}
+	cardUpdates[0] = models.Card{ID: "test2", CardCode: "test"}
 
 	model := models.CardModel{Cards: savedCards}
 

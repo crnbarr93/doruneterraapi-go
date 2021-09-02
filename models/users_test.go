@@ -1,129 +1,132 @@
-package models_test
+package models
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/config"
-	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/db"
-	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/models"
 )
 
-var users *models.UserModel
+var savedUser *User
 
-func InitializeDatabase() *db.Database {
-	database := db.New(config.TestConfig.Database)
-
-	err := database.Connect()
-	if err != nil {
-		panic(err)
-	}
-
-	database.WaitForConnection()
-
-	err = database.DropCollection("users")
-	if err != nil {
-		panic(err)
-	}
-	return database
+func init() {
+	database := InitializeDatabase()
+	database.DropCollection("users")
+	InitModels(database)
+	saveUser()
 }
 
-func initUserModel(d *db.Database) {
-	users = models.InitUserModel(d)
-}
-
-func TestRegister(t *testing.T) {
-	db := InitializeDatabase()
-	initUserModel(db)
-
+func saveUser() {
 	email := "test@test.com"
 	username := "test_user"
 	password := "password"
 
-	user, err := users.Register(username, email, password)
+	user, err := Users.Register(username, email, password)
+	if err != nil {
+		panic(err)
+	}
 
-	assert.Nil(t, err)
-	assert.Equal(t, user.Email, email)
-	assert.Equal(t, user.Username, username)
+	savedUser = user
+}
 
-	failUser, err := users.Register(username, email, password)
+func TestRegister(t *testing.T) {
+	email := "test@test.com"
+	username := "test_user"
+	password := "password"
+
+	assert.Equal(t, savedUser.Email, email)
+	assert.Equal(t, savedUser.Username, username)
+
+	failUser, err := Users.Register(username, email, password)
 
 	assert.Nil(t, failUser)
 	assert.NotNil(t, err)
 }
 
 func TestLogin(t *testing.T) {
-	TestRegister(t)
 
-	email := "test@test.com"
+	email := savedUser.Email
 	password := "password"
 
-	user, err := users.Login(email, password)
+	loggedInUser, err := Users.Login(email, password)
 
 	assert.Nil(t, err)
-	assert.Equal(t, user.Email, email)
+	assert.Equal(t, loggedInUser.Email, email)
 
 	wrongPassword := "wrong"
 
-	failUser, err := users.Login(email, wrongPassword)
+	failUser, err := Users.Login(email, wrongPassword)
 
 	assert.Nil(t, failUser)
 	assert.NotNil(t, err)
 }
 
-func TestGetUserByEmail(t *testing.T) {
-	TestRegister(t)
+func TestGetUserById(t *testing.T) {
+	correctID := savedUser.UserID()
+	correctUser, err := Users.GetUserById(correctID)
+	assert.Nil(t, err)
+	assert.Equal(t, correctUser.ID.Hex(), correctID)
+}
 
-	correctEmail := "test@test.com"
-	correctUser, err := users.GetUserByEmail(correctEmail)
+func TestGetUserByEmail(t *testing.T) {
+	correctEmail := savedUser.Email
+	correctUser, err := Users.GetUserByEmail(correctEmail)
 	assert.Nil(t, err)
 	assert.Equal(t, correctUser.Email, correctEmail)
 
-	incompleteEmail := "test@test."
-	incompleteUser, err := users.GetUserByEmail(incompleteEmail)
+	incompleteEmail := savedUser.Email[:len(savedUser.Email)-2]
+	incompleteUser, err := Users.GetUserByEmail(incompleteEmail)
 	assert.Nil(t, incompleteUser)
 	assert.NotNil(t, err)
 
-	caseSensitiveEmail := "Test@test.com"
-	caseSensitiveUser, err := users.GetUserByEmail(caseSensitiveEmail)
+	caseSensitiveEmail := strings.ToUpper(savedUser.Email)
+	caseSensitiveUser, err := Users.GetUserByEmail(caseSensitiveEmail)
 	assert.Nil(t, err)
 	assert.Equal(t, caseSensitiveUser.Email, correctEmail)
 }
 
 func TestGetUserByUsername(t *testing.T) {
-	TestRegister(t)
-
-	correctUsername := "test_user"
-	correctUser, err := users.GetUserByUsername(correctUsername)
+	correctUsername := savedUser.Username
+	correctUser, err := Users.GetUserByUsername(correctUsername)
 	assert.Nil(t, err)
 	assert.Equal(t, correctUser.Username, correctUsername)
 
-	incompleteUsername := "test_"
-	incompleteUser, err := users.GetUserByUsername(incompleteUsername)
+	incompleteUsername := savedUser.Username[:len(savedUser.Username)-2]
+	incompleteUser, err := Users.GetUserByUsername(incompleteUsername)
 	assert.Nil(t, incompleteUser)
 	assert.NotNil(t, err)
 
-	caseSensitiveUsername := "TesT_UseR"
-	caseSensitiveUser, err := users.GetUserByUsername(caseSensitiveUsername)
+	caseSensitiveUsername := strings.ToUpper(savedUser.Username)
+	caseSensitiveUser, err := Users.GetUserByUsername(caseSensitiveUsername)
 	assert.Nil(t, err)
 	assert.Equal(t, caseSensitiveUser.Username, correctUsername)
 }
 
 func TestSearch(t *testing.T) {
-	TestRegister(t)
+	email := savedUser.Email[:len(savedUser.Email)-2]
+	username := savedUser.Username[:len(savedUser.Username)-1]
 
-	email := "test@tes"
-	username := "test_us"
-
-	usersByEmail, err := users.SearchUsers("", email)
+	usersByEmail, err := Users.SearchUsers("", email)
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(usersByEmail))
 	assert.True(t, strings.Contains(usersByEmail[0].Email, email))
 
-	usersByUsername, err := users.SearchUsers(username, "")
+	usersByUsername, err := Users.SearchUsers(username, "")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(usersByUsername))
 	assert.True(t, strings.Contains(usersByEmail[0].Username, username))
+}
+
+func TestUpdateUser(t *testing.T) {
+	socials := SocialLinks{
+		Instagram: "@someuser",
+	}
+	userToUpdate := savedUser
+	userToUpdate.Socials = socials
+
+	received, err := Users.UpdateUser(userToUpdate)
+
+	assert.Nil(t, err)
+	assert.Equal(t, received.Socials, socials)
 }

@@ -14,6 +14,7 @@ func main() {
 	database := db.New(config.Config.Database)
 
 	c := cron.New()
+	go utils.UpdateAllSets(database)
 	c.AddFunc("0 */48 * * *", func() { go utils.UpdateAllSets(database) })
 	c.Start()
 

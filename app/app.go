@@ -45,12 +45,12 @@ func (a *App) Run(port string) error {
 
 	//Routes
 	cardRoutes := a.Router.Group("/cards")
-	cardRoutes.GET("/all", handler.GetCards)
+	cardRoutes.GET("", handler.GetCards)
 	cardRoutes.GET("/:id", handler.GetCard)
 
 	userRoutes := a.Router.Group("/users")
 	userRoutes.POST("/login", handler.Login)
-	userRoutes.POST("/", handler.Register)
+	userRoutes.POST("", handler.Register)
 	userRoutes.GET("/search", handler.SearchUsers)
 	userRoutes.GET("/validate/email", handler.ValidateEmail)
 	userRoutes.GET("/validate/username", handler.ValidateUsername)

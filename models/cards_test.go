@@ -4,20 +4,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/config"
-	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/db"
-	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 )
 
-func InitializeDatabase() *db.Database {
-	database := db.New(config.TestConfig.Database)
-	err := database.Connect()
-	if err != nil {
-		panic(err)
+func init() {
+	database := InitializeDatabase()
+	database.DropCollection("decks")
+	InitModels(database)
+}
+
+func TestGetCardNumber(t *testing.T) {
+	card := Card{
+		ID: "01SI045",
 	}
 
-	database.WaitForConnection()
-	return database
+	cardNumber := card.CardNumber()
+
+	assert.Equal(t, 45, cardNumber)
 }
 
 func TestCacheCards(t *testing.T) {
@@ -32,8 +34,8 @@ func TestCacheCards(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	cards := make([]types.Card, 1)
-	cards[0] = types.Card{ID: "test"}
+	cards := make([]Card, 1)
+	cards[0] = Card{ID: "test"}
 
 	model := CardModel{Cards: cards}
 
@@ -44,28 +46,25 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestGetCard(t *testing.T) {
-	cards := make([]types.Card, 1)
-	cards[0] = types.Card{ID: "test", CardCode: "test"}
-
-	model := CardModel{Cards: cards}
-
-	expected := cards[0].CardCode
-	received := model.GetCard(cards[0].CardCode).CardCode
+	expected := "01IO012"
+	received := Cards.GetCard("01IO012").ID
 
 	assert.Equal(t, expected, received)
 
-	nilCard := model.GetCard("doesntexist")
+	nilCard := Cards.GetCard("doesntexist")
 
 	assert.Nil(t, nilCard)
 }
 
 func TestUpdateCards(t *testing.T) {
-	cardUpdates := make([]types.Card, 1)
-	cardUpdates[0] = types.Card{
-		ID:                 "01IO012",
+	cardUpdates := make([]Card, 1)
+	cardUpdates[0] = Card{
+		ID:                 "01FR024",
 		AssociatedCardRefs: make([]string, 0),
-		Region:             "Noxus",
-		RegionRef:          "Noxus",
+		Region:             "Freljord",
+		RegionRef:          "Freljord",
+		Supertype:          "Champion",
+		CardSet:            1,
 	}
 
 	database := InitializeDatabase()
