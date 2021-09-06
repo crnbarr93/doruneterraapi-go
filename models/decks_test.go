@@ -3,6 +3,7 @@ package models
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/deck_encoder"
@@ -249,4 +250,105 @@ func TestPublishDeck(t *testing.T) {
 
 	_, err = Decks.PublishDeck(deck.ID)
 	assert.NotNil(t, err)
+}
+
+func TestSearchPopularDecks(t *testing.T) {
+	deckOne := Deck{
+		PageViews:     1000,
+		DatePublished: time.Now().Add(time.Hour * -2),
+		Regions:       []string{"Demacia"},
+		Published:     true,
+		Cards:         []CardQuantity{{CardID: "test", Quantity: 1}},
+	}
+	deckTwo := Deck{
+		PageViews:     1000,
+		DatePublished: time.Now().Add(time.Hour * -1),
+		Regions:       []string{"Noxus"},
+		Published:     true,
+	}
+	deckThree := Deck{
+		PageViews:     5,
+		DatePublished: time.Now().Add(time.Hour * -3),
+		Regions:       []string{"Demacia", "Noxus"},
+		Published:     true,
+	}
+	decks := []Deck{deckOne, deckTwo, deckThree}
+	var savedDecks []Deck
+
+	for _, deck := range decks {
+		saved, err := Decks.SaveDeck(deck)
+		if err != nil {
+			panic(err)
+		}
+
+		savedDecks = append(savedDecks, *saved)
+	}
+
+	baseQuery := SearchPopularDecksQuery{}
+	resp, err := Decks.GetPopularDecks(baseQuery)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, len(savedDecks), len(resp))
+	assert.Equal(t, savedDecks[0].ID, resp[1].ID)
+	assert.Equal(t, savedDecks[1].ID, resp[0].ID)
+
+	limitQuery := SearchPopularDecksQuery{Limit: 2}
+	resp, err = Decks.GetPopularDecks(limitQuery)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, limitQuery.Limit, len(resp))
+	assert.Equal(t, savedDecks[0].ID, resp[1].ID)
+	assert.Equal(t, savedDecks[1].ID, resp[0].ID)
+
+	paginatedQuery := SearchPopularDecksQuery{Limit: 1, Page: 2}
+	resp, err = Decks.GetPopularDecks(paginatedQuery)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, paginatedQuery.Limit, len(resp))
+	assert.Equal(t, savedDecks[2].ID, resp[0].ID)
+
+	searchCardQuery := SearchPopularDecksQuery{Cards: []string{"test"}}
+	resp, err = Decks.GetPopularDecks(searchCardQuery)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, 1, len(resp))
+	assert.Equal(t, savedDecks[0].ID, resp[0].ID)
+
+	searchRegionQuery := SearchPopularDecksQuery{Regions: []string{"Noxus"}}
+	resp, err = Decks.GetPopularDecks(searchRegionQuery)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, 2, len(resp))
+	assert.Equal(t, savedDecks[1].ID, resp[0].ID)
+	assert.Equal(t, savedDecks[2].ID, resp[1].ID)
+
+	searchMultiRegionQuery := SearchPopularDecksQuery{Regions: []string{"Noxus", "Demacia"}}
+	resp, err = Decks.GetPopularDecks(searchMultiRegionQuery)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, 1, len(resp))
+	assert.Equal(t, savedDecks[2].ID, resp[0].ID)
+
+	sortedQuery := SearchPopularDecksQuery{Sorting: "pageViews", SortAsc: -1}
+	resp, err = Decks.GetPopularDecks(sortedQuery)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, len(savedDecks), len(resp))
+	assert.Equal(t, savedDecks[2].ID, resp[0].ID)
+	assert.True(t, resp[0].PageViews <= resp[1].PageViews)
+	assert.True(t, resp[1].PageViews <= resp[2].PageViews)
 }

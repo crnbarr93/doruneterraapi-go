@@ -64,6 +64,7 @@ func (c *DDCard) toCard() models.Card {
 		AssociatedCardRefs:    c.AssociatedCardRefs,
 		Region:                c.Region,
 		RegionRef:             c.RegionRef,
+		Regions:               c.Regions,
 		Attack:                c.Attack,
 		Cost:                  c.Cost,
 		Health:                c.Health,

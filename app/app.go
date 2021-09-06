@@ -50,7 +50,9 @@ func (a *App) Run(port string) error {
 
 	userRoutes := a.Router.Group("/users")
 	userRoutes.POST("/login", handler.Login)
+	userRoutes.POST("/logout", handler.Logout)
 	userRoutes.POST("", handler.Register)
+	userRoutes.GET("/auth", handler.Auth)
 	userRoutes.GET("/search", handler.SearchUsers)
 	userRoutes.GET("/validate/email", handler.ValidateEmail)
 	userRoutes.GET("/validate/username", handler.ValidateUsername)

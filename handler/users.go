@@ -2,9 +2,11 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/models"
+	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/utils"
 )
 
 type LoginRequest struct {
@@ -29,7 +31,23 @@ func Login(c echo.Context) error {
 		return err
 	}
 
+	jwtCookie := utils.CreateJWTCookie(*user)
+	if jwtCookie != nil {
+		c.SetCookie(jwtCookie)
+	}
+
 	return c.JSON(200, user)
+}
+
+func Logout(c echo.Context) error {
+	emptyCookie := &http.Cookie{
+		Name:    "authtoken",
+		Value:   "",
+		Expires: time.Unix(0, 0),
+	}
+	c.SetCookie(emptyCookie)
+
+	return c.JSON(200, true)
 }
 
 type RegisterRequest struct {
@@ -91,4 +109,19 @@ func ValidateUsername(c echo.Context) error {
 	user, _ := models.Users.GetUserByUsername(username)
 
 	return c.JSON(200, user == nil)
+}
+
+func Auth(c echo.Context) error {
+	cookie := utils.GetJWTCookie(c.Cookies())
+
+	if cookie == nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid auth token")
+	}
+
+	user, err := utils.DecodeToken(cookie.Value)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Could not decode auth token")
+	}
+
+	return c.JSON(200, user)
 }

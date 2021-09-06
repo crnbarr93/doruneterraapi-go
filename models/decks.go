@@ -19,6 +19,19 @@ type DeckModel struct {
 	collection *mongo.Collection
 }
 
+type SearchPopularDecksQuery struct {
+	Cards          []string `json:"cards" bson:"cards"`
+	Limit          int      `json:"limit" bson:"limit"`
+	Search         string   `json:"search" bson:"search"`
+	Regions        []string `json:"regions" bson:"regions"`
+	Types          []string `json:"types" bson:"types"`
+	Page           int      `json:"page" bson:"page"`
+	Liked          bool     `json:"liked" bson:"liked"`
+	FeaturedPlayer bool     `json:"featuredPlayer" bson:"featuredPlayer"`
+	Sorting        string   `json:"sorting" bson:"sorting"`
+	SortAsc        int      `json:"sortAsc" bson:"sortAsc"`
+}
+
 type CardQuantity struct {
 	CardID   string `json:"cardId" bson:"cardId"`
 	Quantity int    `json:"quantity" bson:"quantity"`
@@ -40,7 +53,7 @@ type Deck struct {
 	DateUpdated    time.Time      `json:"dateUpdated" bson:"dateUpdated"`
 	DatePublished  time.Time      `json:"datePublished,omitempty" bson:"datePublished,omitempty"`
 	DateDeleted    time.Time      `json:"dateDeleted,omitempty" bson:"dateDeleted,omitempty"`
-	PageViews      int            `json:"pageviews" bson:"pageviews"`
+	PageViews      int            `json:"pageViews" bson:"pageViews"`
 	Guide          string         `json:"guide" bson:"guide"`
 	Published      bool           `json:"published" bson:"published"`
 	Deleted        bool           `json:"deleted" bson:"deleted"`
@@ -48,6 +61,7 @@ type Deck struct {
 	FeaturedPlayer string         `json:"featuredPlayer,omitempty" bson:"featuredPlayer,omitempty"`
 	Badge          DeckBadge      `json:"deckBadge,omitempty" bson:"deckBadge,omitempty"`
 	Sandbox        bool           `json:"sandbox" bson:"sandbox"`
+	Popularity     int            `json:"popularity,omitempty,truncate" bson:"popularity,omitempty,truncate"`
 }
 
 func (d Deck) DeckID() (primitive.ObjectID, error) {
@@ -324,4 +338,103 @@ func (m DeckModel) PublishDeck(deckID string) (*Deck, error) {
 	err := curr.Decode(&deletedDeck)
 
 	return &deletedDeck, err
+}
+
+func (m DeckModel) GetPopularDecks(query SearchPopularDecksQuery) ([]Deck, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	pipeline := query.GeneratePipeline()
+
+	decksCurr, err := m.collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	var decks []Deck
+	if err = decksCurr.All(ctx, &decks); err != nil {
+		return nil, err
+	}
+
+	return decks, nil
+}
+
+func generateAddFieldsStage() bson.D {
+	msToHoursRatio := 3600 * 1000
+	cardIds := bson.M{"$map": bson.M{"input": "$cards", "as": "card", "in": "$$card.cardId"}}
+
+	// Hackernews popularity: p/(t^g)
+	p := bson.M{"$subtract": []interface{}{"$pageViews", 1}}
+	timeSincePublished := bson.D{{"$subtract", []interface{}{time.Now(), "$datePublished"}}}
+	t := bson.M{"$ceil": bson.M{"$divide": []interface{}{timeSincePublished, msToHoursRatio}}} //Ceiling of time difference in milliseconds
+	g := 1.8
+	denominator := bson.M{"$pow": []interface{}{t, g}}
+	popularity := bson.M{"$divide": []interface{}{p, denominator}}
+
+	return bson.D{{"$addFields", bson.M{"cardIds": cardIds, "popularity": popularity}}}
+}
+
+func (q SearchPopularDecksQuery) searchField() string {
+	if len(q.Search) > 0 {
+		return q.Search
+	}
+
+	return "popularity"
+}
+
+func (q SearchPopularDecksQuery) sortAsc() int {
+	if q.SortAsc == 0 {
+		return -1
+	}
+
+	return q.SortAsc * -1
+}
+
+func (q SearchPopularDecksQuery) GeneratePipeline() mongo.Pipeline {
+	matchQuery := bson.M{"published": true, "datePublished": bson.M{"$exists": true}}
+
+	if q.FeaturedPlayer {
+		matchQuery["featuredPlayer"] = bson.M{"$exists": q.FeaturedPlayer}
+	}
+
+	if len(q.Cards) > 0 {
+		matchQuery["cardIds"] = bson.M{"$all": q.Cards}
+	}
+
+	if len(q.Search) > 0 {
+		matchQuery["$or"] = []bson.M{
+			{"title": bson.M{"$regex": q.Search, "$options": "i"}},
+			{"ownerUsername": bson.M{"$regex": q.Search, "$options": "i"}},
+		}
+	}
+
+	if len(q.Regions) > 0 {
+		matchQuery["regions"] = bson.M{"$all": q.Regions}
+	}
+
+	if len(q.Types) > 0 {
+		matchQuery["types"] = bson.M{"$all": q.Types}
+	}
+
+	sortField := q.searchField()
+
+	addFieldsStage := generateAddFieldsStage()
+	matchStage := bson.D{{"$match", matchQuery}}
+
+	pipeline := mongo.Pipeline{addFieldsStage, matchStage}
+
+	if q.Limit > 0 {
+		if q.Page > 0 {
+			skipStage := bson.D{{"$skip", q.Limit * q.Page}}
+			pipeline = append(pipeline, skipStage)
+		}
+
+		limitStage := bson.D{{"$limit", q.Limit}}
+		pipeline = append(pipeline, limitStage)
+	}
+
+	sortStage := bson.D{{"$sort", bson.M{sortField: q.sortAsc()}}}
+	pipeline = append(pipeline, sortStage)
+
+	return pipeline
 }

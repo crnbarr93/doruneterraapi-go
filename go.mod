@@ -3,6 +3,7 @@ module gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go
 go 1.13
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-playground/validator v9.31.0+incompatible // indirect
 	github.com/google/go-cmp v0.5.5
