@@ -245,6 +245,24 @@ func (m DeckModel) GetDeck(deckID string) (*Deck, error) {
 	return &deck, nil
 }
 
+func (m DeckModel) GetDecks(deckIDs []string) ([]Deck, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var decks []Deck
+
+	result, err := m.collection.Find(ctx, bson.M{"_id": bson.M{"$in": deckIDs}})
+	if err != nil {
+		return nil, err
+	}
+
+	err = result.All(ctx, &decks)
+	if err != nil {
+		return nil, err
+	}
+	return decks, nil
+}
+
 func (m DeckModel) GetDecksByOwner(ownerName string) ([]*Deck, error) {
 	var data []*Deck
 	regex := bson.D{{Key: "$regex", Value: primitive.Regex{Pattern: ownerName, Options: "i"}}}
@@ -365,13 +383,13 @@ func generateAddFieldsStage() bson.D {
 
 	// Hackernews popularity: p/(t^g)
 	p := bson.M{"$subtract": []interface{}{"$pageViews", 1}}
-	timeSincePublished := bson.D{{"$subtract", []interface{}{time.Now(), "$datePublished"}}}
+	timeSincePublished := bson.D{{Key: "$subtract", Value: []interface{}{time.Now(), "$datePublished"}}}
 	t := bson.M{"$ceil": bson.M{"$divide": []interface{}{timeSincePublished, msToHoursRatio}}} //Ceiling of time difference in milliseconds
 	g := 1.8
 	denominator := bson.M{"$pow": []interface{}{t, g}}
 	popularity := bson.M{"$divide": []interface{}{p, denominator}}
 
-	return bson.D{{"$addFields", bson.M{"cardIds": cardIds, "popularity": popularity}}}
+	return bson.D{{Key: "$addFields", Value: bson.M{"cardIds": cardIds, "popularity": popularity}}}
 }
 
 func (q SearchPopularDecksQuery) searchField() string {
@@ -419,21 +437,21 @@ func (q SearchPopularDecksQuery) GeneratePipeline() mongo.Pipeline {
 	sortField := q.searchField()
 
 	addFieldsStage := generateAddFieldsStage()
-	matchStage := bson.D{{"$match", matchQuery}}
+	matchStage := bson.D{{Key: "$match", Value: matchQuery}}
 
 	pipeline := mongo.Pipeline{addFieldsStage, matchStage}
 
 	if q.Limit > 0 {
 		if q.Page > 0 {
-			skipStage := bson.D{{"$skip", q.Limit * q.Page}}
+			skipStage := bson.D{{Key: "$skip", Value: q.Limit * q.Page}}
 			pipeline = append(pipeline, skipStage)
 		}
 
-		limitStage := bson.D{{"$limit", q.Limit}}
+		limitStage := bson.D{{Key: "$limit", Value: q.Limit}}
 		pipeline = append(pipeline, limitStage)
 	}
 
-	sortStage := bson.D{{"$sort", bson.M{sortField: q.sortAsc()}}}
+	sortStage := bson.D{{Key: "$sort", Value: bson.M{sortField: q.sortAsc()}}}
 	pipeline = append(pipeline, sortStage)
 
 	return pipeline

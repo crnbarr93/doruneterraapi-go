@@ -7,6 +7,7 @@ import (
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/db"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/handler"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/models"
+	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/utils"
 )
 
 type App struct {
@@ -49,10 +50,11 @@ func (a *App) Run(port string) error {
 	cardRoutes.GET("/:id", handler.GetCard)
 
 	userRoutes := a.Router.Group("/users")
+	userAuthRoutes := a.Router.Group("/users", utils.JWTMiddleware())
 	userRoutes.POST("/login", handler.Login)
 	userRoutes.POST("/logout", handler.Logout)
 	userRoutes.POST("", handler.Register)
-	userRoutes.GET("/auth", handler.Auth)
+	userAuthRoutes.GET("/auth", handler.Auth)
 	userRoutes.GET("/search", handler.SearchUsers)
 	userRoutes.GET("/validate/email", handler.ValidateEmail)
 	userRoutes.GET("/validate/username", handler.ValidateUsername)

@@ -1,19 +1,14 @@
-package models
+package models_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/models"
 )
 
-func init() {
-	database := InitializeDatabase()
-	database.DropCollection("decks")
-	InitModels(database)
-}
-
 func TestGetCardNumber(t *testing.T) {
-	card := Card{
+	card := models.Card{
 		ID: "01SI045",
 	}
 
@@ -25,7 +20,7 @@ func TestGetCardNumber(t *testing.T) {
 func TestCacheCards(t *testing.T) {
 	database := InitializeDatabase()
 	collection := database.Collection("cards")
-	model := NewCardModel(collection)
+	model := models.NewCardModel(collection)
 
 	err := model.CacheCards()
 
@@ -34,10 +29,10 @@ func TestCacheCards(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	cards := make([]Card, 1)
-	cards[0] = Card{ID: "test"}
+	cards := make([]models.Card, 1)
+	cards[0] = models.Card{ID: "test"}
 
-	model := CardModel{Cards: cards}
+	model := models.CardModel{Cards: cards}
 
 	expected := cards[0].ID
 	received := model.GetAll()[0].ID
@@ -47,29 +42,30 @@ func TestGetAll(t *testing.T) {
 
 func TestGetCard(t *testing.T) {
 	expected := "01IO012"
-	received := Cards.GetCard("01IO012").ID
+	received := models.Cards.GetCard("01IO012").ID
 
 	assert.Equal(t, expected, received)
 
-	nilCard := Cards.GetCard("doesntexist")
+	nilCard := models.Cards.GetCard("doesntexist")
 
 	assert.Nil(t, nilCard)
 }
 
 func TestUpdateCards(t *testing.T) {
-	cardUpdates := make([]Card, 1)
-	cardUpdates[0] = Card{
+	cardUpdates := make([]models.Card, 1)
+	cardUpdates[0] = models.Card{
 		ID:                 "01FR024",
 		AssociatedCardRefs: make([]string, 0),
 		Region:             "Freljord",
 		RegionRef:          "Freljord",
 		Supertype:          "Champion",
 		CardSet:            1,
+		Keywords:           []string{"TestKeyword"},
 	}
 
 	database := InitializeDatabase()
 
-	model := NewCardModel(database.Collection("cards"))
+	model := models.NewCardModel(database.Collection("cards"))
 	model.UpdateCards(cardUpdates)
 
 	updatedCard, err := model.GetCardFromDB(cardUpdates[0].ID)

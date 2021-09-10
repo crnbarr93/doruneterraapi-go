@@ -1,4 +1,4 @@
-package models
+package models_test
 
 import (
 	"strings"
@@ -7,18 +7,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/deck_encoder"
+	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/models"
 	"gitlab.com/teamliquid-dev/decks-of-runeterra/doruneterraapi-go/types"
 )
 
-func init() {
-	database := InitializeDatabase()
-	database.DropCollection("decks")
-	InitModels(database)
-}
-
 func TestDeckCardCount(t *testing.T) {
-	deck := Deck{
-		Cards: []CardQuantity{{CardID: "2", Quantity: 2}, {CardID: "1", Quantity: 3}},
+	deck := models.Deck{
+		Cards: []models.CardQuantity{{CardID: "2", Quantity: 2}, {CardID: "1", Quantity: 3}},
 	}
 
 	received := deck.CardCount()
@@ -27,8 +22,8 @@ func TestDeckCardCount(t *testing.T) {
 }
 
 func TestDeckChampionCount(t *testing.T) {
-	deck := Deck{
-		Cards: []CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
+	deck := models.Deck{
+		Cards: []models.CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
 	}
 
 	received := deck.ChampionCount()
@@ -37,8 +32,8 @@ func TestDeckChampionCount(t *testing.T) {
 }
 
 func TestDeckCalculateRegions(t *testing.T) {
-	deck := Deck{
-		Cards: []CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
+	deck := models.Deck{
+		Cards: []models.CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
 	}
 
 	received := deck.CalculateRegions()
@@ -47,8 +42,8 @@ func TestDeckCalculateRegions(t *testing.T) {
 }
 
 func TestAllCardsValid(t *testing.T) {
-	deck := Deck{
-		Cards: []CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "1", Quantity: 3}},
+	deck := models.Deck{
+		Cards: []models.CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "1", Quantity: 3}},
 	}
 
 	received, err := deck.AllCardsValid()
@@ -58,8 +53,8 @@ func TestAllCardsValid(t *testing.T) {
 }
 
 func TestIsDeckValid(t *testing.T) {
-	deck := Deck{
-		Cards: []CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
+	deck := models.Deck{
+		Cards: []models.CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
 	}
 
 	received, err := deck.IsValid(false, false, false)
@@ -67,34 +62,34 @@ func TestIsDeckValid(t *testing.T) {
 	assert.Equal(t, true, received)
 	assert.Nil(t, err)
 
-	deck = Deck{
-		Cards: []CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
+	deck = models.Deck{
+		Cards: []models.CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
 	}
 
 	received, err = deck.IsValid(false, true, false)
 	assert.Equal(t, false, received)
 	assert.Equal(t, types.InvalidDeckErrorFromString("Deck must include 40 cards to be published"), err)
 
-	deck = Deck{}
+	deck = models.Deck{}
 
 	received, err = deck.IsValid(true, false, false)
 	assert.Equal(t, false, received)
 	assert.Equal(t, types.InvalidDeckErrorFromString("Deck must include at least 1 card"), err)
 
-	deck = Deck{Cards: []CardQuantity{{CardID: "01FR024", Quantity: 9}, {CardID: "01IO012", Quantity: 31}}}
+	deck = models.Deck{Cards: []models.CardQuantity{{CardID: "01FR024", Quantity: 9}, {CardID: "01IO012", Quantity: 31}}}
 	received, err = deck.IsValid(false, true, false)
 	assert.Equal(t, false, received)
 	assert.Equal(t, types.InvalidDeckErrorFromString("Deck can only contain at most 6 Champion Cards"), err)
 
-	deck = Deck{Cards: []CardQuantity{{CardID: "01IO012", Quantity: 40}}}
+	deck = models.Deck{Cards: []models.CardQuantity{{CardID: "01IO012", Quantity: 40}}}
 	received, err = deck.IsValid(false, true, false)
 	assert.Equal(t, false, received)
 	assert.Equal(t, types.InvalidDeckErrorFromString("Deck can only contain, at most, 3 of any individual card"), err)
 }
 
 func TestEncodeDeck(t *testing.T) {
-	deck := Deck{
-		Cards: []CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
+	deck := models.Deck{
+		Cards: []models.CardQuantity{{CardID: "01FR024", Quantity: 3}, {CardID: "01IO012", Quantity: 3}},
 	}
 
 	code := deck.Encode()
@@ -107,14 +102,14 @@ func TestEncodeDeck(t *testing.T) {
 	assert.Equal(t, deck.ToEncodableDeck(), decoded)
 }
 
-func saveDeck() (*Deck, error) {
-	newDeck := Deck{
+func saveDeck() (*models.Deck, error) {
+	newDeck := models.Deck{
 		Title:         "Some Test Deck",
 		OwnerUsername: "TestUser",
 		Owner:         "1",
 	}
 
-	return Decks.SaveDeck(newDeck)
+	return models.Decks.SaveDeck(newDeck)
 }
 
 func TestSaveDeck(t *testing.T) {
@@ -130,7 +125,7 @@ func TestGetDeck(t *testing.T) {
 	}
 
 	expected := deck.Title
-	received, err := Decks.GetDeck(deck.ID)
+	received, err := models.Decks.GetDeck(deck.ID)
 
 	assert.Nil(t, err)
 	assert.Equal(t, expected, received.Title)
@@ -143,19 +138,19 @@ func TestGetDecksByOwner(t *testing.T) {
 	}
 
 	expected := deck.Title
-	received, err := Decks.GetDecksByOwner(deck.OwnerUsername)
+	received, err := models.Decks.GetDecksByOwner(deck.OwnerUsername)
 
 	assert.Nil(t, err)
 	assert.Greater(t, len(received), 0)
 	assert.Equal(t, expected, received[0].Title)
 
-	received, err = Decks.GetDecksByOwner(strings.ToLower(deck.OwnerUsername))
+	received, err = models.Decks.GetDecksByOwner(strings.ToLower(deck.OwnerUsername))
 
 	assert.Nil(t, err)
 	assert.Greater(t, len(received), 0)
 	assert.Equal(t, expected, received[0].Title)
 
-	received, err = Decks.GetDecksByOwner("userdoesntexist")
+	received, err = models.Decks.GetDecksByOwner("userdoesntexist")
 
 	assert.Nil(t, err)
 	assert.Empty(t, received)
@@ -168,13 +163,13 @@ func TestGetDecksByOwnerID(t *testing.T) {
 	}
 
 	expected := deck.Title
-	received, err := Decks.GetDecksByOwnerID(deck.Owner)
+	received, err := models.Decks.GetDecksByOwnerID(deck.Owner)
 
 	assert.Nil(t, err)
 	assert.Greater(t, len(received), 0)
 	assert.Equal(t, expected, received[0].Title)
 
-	received, err = Decks.GetDecksByOwnerID("userdoesntexist")
+	received, err = models.Decks.GetDecksByOwnerID("userdoesntexist")
 
 	assert.Nil(t, err)
 	assert.Empty(t, received)
@@ -187,19 +182,19 @@ func TestSearchDecks(t *testing.T) {
 	}
 
 	expected := deck.Title
-	received, err := Decks.SearchDecks(strings.ToLower(deck.Title))
+	received, err := models.Decks.SearchDecks(strings.ToLower(deck.Title))
 
 	assert.Nil(t, err)
 	assert.Greater(t, len(received), 0)
 	assert.Equal(t, expected, received[0].Title)
 
-	received, err = Decks.SearchDecks(strings.ToLower(deck.OwnerUsername))
+	received, err = models.Decks.SearchDecks(strings.ToLower(deck.OwnerUsername))
 
 	assert.Nil(t, err)
 	assert.Greater(t, len(received), 0)
 	assert.Equal(t, expected, received[0].Title)
 
-	received, err = Decks.SearchDecks("no deck exists with this search")
+	received, err = models.Decks.SearchDecks("no deck exists with this search")
 
 	assert.Nil(t, err)
 	assert.Empty(t, received)
@@ -213,7 +208,7 @@ func TestUpdateDeck(t *testing.T) {
 
 	updatedDeck := deck
 	updatedDeck.Title = "New Title"
-	received, err := Decks.UpdateDeck(*updatedDeck)
+	received, err := models.Decks.UpdateDeck(*updatedDeck)
 
 	assert.Nil(t, err)
 	assert.Equal(t, updatedDeck.Title, received.Title)
@@ -225,7 +220,7 @@ func TestDeleteDeck(t *testing.T) {
 		panic(err)
 	}
 
-	deletedDeck, err := Decks.DeleteDeck(deck.ID)
+	deletedDeck, err := models.Decks.DeleteDeck(deck.ID)
 
 	assert.Nil(t, err)
 	assert.Equal(t, false, deletedDeck.Published)
@@ -238,45 +233,45 @@ func TestPublishDeck(t *testing.T) {
 		panic(err)
 	}
 
-	publishedDeck, err := Decks.PublishDeck(deck.ID)
+	publishedDeck, err := models.Decks.PublishDeck(deck.ID)
 
 	assert.Nil(t, err)
 	assert.Equal(t, true, publishedDeck.Published)
 
-	_, err = Decks.DeleteDeck(deck.ID)
+	_, err = models.Decks.DeleteDeck(deck.ID)
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = Decks.PublishDeck(deck.ID)
+	_, err = models.Decks.PublishDeck(deck.ID)
 	assert.NotNil(t, err)
 }
 
 func TestSearchPopularDecks(t *testing.T) {
-	deckOne := Deck{
+	deckOne := models.Deck{
 		PageViews:     1000,
 		DatePublished: time.Now().Add(time.Hour * -2),
 		Regions:       []string{"Demacia"},
 		Published:     true,
-		Cards:         []CardQuantity{{CardID: "test", Quantity: 1}},
+		Cards:         []models.CardQuantity{{CardID: "test", Quantity: 1}},
 	}
-	deckTwo := Deck{
+	deckTwo := models.Deck{
 		PageViews:     1000,
 		DatePublished: time.Now().Add(time.Hour * -1),
 		Regions:       []string{"Noxus"},
 		Published:     true,
 	}
-	deckThree := Deck{
+	deckThree := models.Deck{
 		PageViews:     5,
 		DatePublished: time.Now().Add(time.Hour * -3),
 		Regions:       []string{"Demacia", "Noxus"},
 		Published:     true,
 	}
-	decks := []Deck{deckOne, deckTwo, deckThree}
-	var savedDecks []Deck
+	decks := []models.Deck{deckOne, deckTwo, deckThree}
+	var savedDecks []models.Deck
 
 	for _, deck := range decks {
-		saved, err := Decks.SaveDeck(deck)
+		saved, err := models.Decks.SaveDeck(deck)
 		if err != nil {
 			panic(err)
 		}
@@ -284,8 +279,8 @@ func TestSearchPopularDecks(t *testing.T) {
 		savedDecks = append(savedDecks, *saved)
 	}
 
-	baseQuery := SearchPopularDecksQuery{}
-	resp, err := Decks.GetPopularDecks(baseQuery)
+	baseQuery := models.SearchPopularDecksQuery{}
+	resp, err := models.Decks.GetPopularDecks(baseQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -294,8 +289,8 @@ func TestSearchPopularDecks(t *testing.T) {
 	assert.Equal(t, savedDecks[0].ID, resp[1].ID)
 	assert.Equal(t, savedDecks[1].ID, resp[0].ID)
 
-	limitQuery := SearchPopularDecksQuery{Limit: 2}
-	resp, err = Decks.GetPopularDecks(limitQuery)
+	limitQuery := models.SearchPopularDecksQuery{Limit: 2}
+	resp, err = models.Decks.GetPopularDecks(limitQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -304,8 +299,8 @@ func TestSearchPopularDecks(t *testing.T) {
 	assert.Equal(t, savedDecks[0].ID, resp[1].ID)
 	assert.Equal(t, savedDecks[1].ID, resp[0].ID)
 
-	paginatedQuery := SearchPopularDecksQuery{Limit: 1, Page: 2}
-	resp, err = Decks.GetPopularDecks(paginatedQuery)
+	paginatedQuery := models.SearchPopularDecksQuery{Limit: 1, Page: 2}
+	resp, err = models.Decks.GetPopularDecks(paginatedQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -313,8 +308,8 @@ func TestSearchPopularDecks(t *testing.T) {
 	assert.Equal(t, paginatedQuery.Limit, len(resp))
 	assert.Equal(t, savedDecks[2].ID, resp[0].ID)
 
-	searchCardQuery := SearchPopularDecksQuery{Cards: []string{"test"}}
-	resp, err = Decks.GetPopularDecks(searchCardQuery)
+	searchCardQuery := models.SearchPopularDecksQuery{Cards: []string{"test"}}
+	resp, err = models.Decks.GetPopularDecks(searchCardQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -322,8 +317,8 @@ func TestSearchPopularDecks(t *testing.T) {
 	assert.Equal(t, 1, len(resp))
 	assert.Equal(t, savedDecks[0].ID, resp[0].ID)
 
-	searchRegionQuery := SearchPopularDecksQuery{Regions: []string{"Noxus"}}
-	resp, err = Decks.GetPopularDecks(searchRegionQuery)
+	searchRegionQuery := models.SearchPopularDecksQuery{Regions: []string{"Noxus"}}
+	resp, err = models.Decks.GetPopularDecks(searchRegionQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -332,8 +327,8 @@ func TestSearchPopularDecks(t *testing.T) {
 	assert.Equal(t, savedDecks[1].ID, resp[0].ID)
 	assert.Equal(t, savedDecks[2].ID, resp[1].ID)
 
-	searchMultiRegionQuery := SearchPopularDecksQuery{Regions: []string{"Noxus", "Demacia"}}
-	resp, err = Decks.GetPopularDecks(searchMultiRegionQuery)
+	searchMultiRegionQuery := models.SearchPopularDecksQuery{Regions: []string{"Noxus", "Demacia"}}
+	resp, err = models.Decks.GetPopularDecks(searchMultiRegionQuery)
 	if err != nil {
 		panic(err)
 	}
@@ -341,8 +336,8 @@ func TestSearchPopularDecks(t *testing.T) {
 	assert.Equal(t, 1, len(resp))
 	assert.Equal(t, savedDecks[2].ID, resp[0].ID)
 
-	sortedQuery := SearchPopularDecksQuery{Sorting: "pageViews", SortAsc: -1}
-	resp, err = Decks.GetPopularDecks(sortedQuery)
+	sortedQuery := models.SearchPopularDecksQuery{Sorting: "pageViews", SortAsc: -1}
+	resp, err = models.Decks.GetPopularDecks(sortedQuery)
 	if err != nil {
 		panic(err)
 	}
